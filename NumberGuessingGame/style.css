@@ -1,0 +1,85 @@
+body{
+	font-family: Arial, sans-serif;
+	background:#f2f2f2;
+	text-align: center;
+	padding-top: 100px;
+}
+
+.game-container{
+	background: white;
+	width: 350px;
+	margin: auto;
+	padding: 30px;
+	border-radius: 15px;
+	box-shadow: 0 5px rgba(0,0,0,0.2);
+}
+
+input{
+	padding: 12px;
+	width:200px;
+	border: 2px solid #ccc;
+	border-radius: 8px;
+	font-size:16px;
+}
+
+button{
+	padding:12px 20px;
+	margin: 10px 5px;
+	border: none;
+	border-radius: 8px;
+	cursor:pointer;
+	font-size:16px;
+}
+
+#message {
+	margin-top:20px;
+	font-size:20px;
+	font-weight: bold;
+}
+
+#attempts{
+	margin-top: 10px;
+	font-size: 16px;
+}
+
+#resetButton{
+	background:#444;
+	color:white;
+	transition: transform 0.2s;
+}
+
+#resetButton:hover{
+	transform: scale)1.05);
+}
+	
+
+@keyframes winAnimation{
+	0%{
+		transform: scale(1);
+	}
+	
+	50%{
+		transform: scale(1.2);
+	}
+	
+	100%{
+		tranform: scale(1);
+}}
+.win{
+	animation: winAnimation 0.6s ease-in-out;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
