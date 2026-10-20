@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Quest: Gamified Learning & Habit RPG</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- AlaSQL Engine CDN for robust in-memory SQL execution -->
+    <script src="https://cdn.jsdelivr.net/npm/alasql@1.7.3/dist/alasql.min.js"></script>
+    <!-- Canvas Confetti for celebratory FX -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#0B0E14',
+                            card: '#151B26',
+                            border: '#2A3447',
+                            neon: '#00F0FF',
+                            purple: '#A855F7',
+                            gold: '#F59E0B',
+                            pink: '#EC4899',
+                            success: '#10B981'
+                        }
+                    },
+                    fontFamily: {
+                        pixel: ['"Press Start 2P"', 'cursive'],
+                        sans: ['Rajdhani', 'sans-serif'],
+                        code: ['"Fira Code"', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0B0E14;
+            color: #E2E8F0;
+            font-family: 'Rajdhani', sans-serif;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(168, 85, 247, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(0, 240, 255, 0.08) 0%, transparent 40%);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0E14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2A3447;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #A855F7;
+        }
+
+        /* Neon Glow Effects */
+        .neon-border-cyan {
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+            border: 1px solid rgba(0, 240, 255, 0.5);
+        }
+        .neon-border-purple {
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+            border: 1px solid rgba(168, 85, 247, 0.5);
+        }
+        .neon-text-cyan {
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+        }
+        .neon-text-gold {
+            text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+        }
+
+        /* Pixel Glass Button Effect */
+        .pixel-btn {
+            position: relative;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+        }
+        .pixel-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.5);
+        }
+
+        /* Level Progress Animation */
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; filter: drop-shadow(0 0 12px #00F0FF); }
+        }
+        .pulse-glow {
+            animation: pulseGlow 2s infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyber-purple selection:text-white">
+
+    <!-- TOP HEADER / NAV -->
+    <header class="border-b border-cyber-border bg-cyber-card/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyber-purple to-cyber-neon flex items-center justify-center text-cyber-dark font-black text-xl shadow-lg">
+                    <i class="fa-solid fa-database"></i>
+                </div>
+                <div>
+                    <h1 class="font-pixel text-xs sm:text-sm text-cyber-neon tracking-wider">SQL QUEST</h1>
+                    <p class="text-xs text-gray-400 font-semibold uppercase tracking-widest">Database RPG & Habit Master</p>
+                </div>
+            </div>
+
+            <!-- Top Hero Stats Quick Bar -->
+            <div class="flex items-center gap-4 bg-cyber-dark/80 px-4 py-2 rounded-xl border border-cyber-border/80 text-xs sm:text-sm">
+                <!-- Hero Name & Class -->
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-user-shield text-cyber-neon"></i>
+                    <span id="headerHeroName" class="font-bold text-gray-200">Cyber Knight</span>
+                </div>
+                
+                <div class="h-4 w-px bg-cyber-border"></div>
+
+                <!-- Level -->
+                <div class="flex items-center gap-1">
+                    <span class="text-gray-400">LVL</span>
+                    <span id="headerLevel" class="font-pixel text-cyber-gold text-xs">1</span>
+                </div>
+
+                <div class="h-4 w-px bg-cyber-border"></div>
+
+                <!-- Gold -->
+                <div class="flex items-center gap-1">
+                    <i class="fa-solid fa-coins text-cyber-gold"></i>
+                    <span id="headerGold" class="font-mono text-cyber-gold font-bold">120</span>
+                </div>
+
+                <div class="h-4 w-px bg-cyber-border"></div>
+
+                <!-- XP Bar -->
+                <div class="hidden sm:flex items-center gap-2">
+                    <span class="text-xs text-cyber-purple font-bold">XP</span>
+                    <div class="w-24 bg-cyber-dark rounded-full h-2.5 border border-cyber-border overflow-hidden">
+                        <div id="headerXpBar" class="bg-gradient-to-r from-cyber-purple to-cyber-neon h-full transition-all duration-300" style="width: 25%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex items-center bg-cyber-dark p-1 rounded-xl border border-cyber-border text-xs sm:text-sm font-semibold">
+                <button onclick="switchTab('quests')" id="tabBtn-quests" class="nav-tab px-4 py-2 rounded-lg text-cyber-neon bg-cyber-card border border-cyber-neon/40 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-scroll"></i>
+                    <span>SQL Quests</span>
+                </button>
+                <button onclick="switchTab('habits')" id="tabBtn-habits" class="nav-tab px-4 py-2 rounded-lg text-gray-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-hat-wizard"></i>
+                    <span>Hero & Habits</span>
+                </button>
+                <button onclick="switchTab('sandbox')" id="tabBtn-sandbox" class="nav-tab px-4 py-2 rounded-lg text-gray-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-terminal"></i>
+                    <span>SQL Sandbox</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MAIN APP CONTENT AREA -->
+    <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 flex-1">
+
+        <!-- ========================================== -->
+        <!-- TAB 1: SQL QUEST MODE (CAMPAIGN / QUESTS)  -->
+        <!-- ========================================== -->
+        <section id="tab-quests" class="space-y-6">
+            
+            <!-- Quest Selector Header -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                
+                <!-- Left Column: Quest Map & Levels list -->
+                <div class="bg-cyber-card rounded-2xl border border-cyber-border p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="font-bold text-lg text-white flex items-center gap-2">
+                                <i class="fa-solid fa-map-location-dot text-cyber-purple"></i>
+                                Campaign Levels
+                            </h2>
+                            <span id="campaignProgressText" class="text-xs bg-cyber-purple/20 text-cyber-purple px-2 py-1 rounded border border-cyber-purple/30 font-mono">0 / 6 Clear</span>
+                        </div>
+
+                        <!-- Levels List Container -->
+                        <div id="questLevelsList" class="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Reset Progress Button -->
+                    <div class="mt-4 pt-3 border-t border-cyber-border flex justify-between items-center text-xs text-gray-400">
+                        <span>Database: SQLite In-Memory</span>
+                        <button onclick="resetCampaignProgress()" class="text-gray-400 hover:text-red-400 transition-colors">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> Reset Campaign
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Column: Interactive Quest Editor Workspace -->
+                <div class="lg:col-span-3 space-y-4">
+                    
+                    <!-- Quest Story Banner -->
+                    <div class="bg-gradient-to-r from-cyber-card via-cyber-card to-cyber-purple/20 rounded-2xl border border-cyber-border p-5 relative overflow-hidden">
+                        <div class="absolute -right-4 -bottom-4 text-cyber-purple/10 text-8xl font-pixel pointer-events-none">
+                            <i class="fa-solid fa-dungeon"></i>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <div class="flex items-center gap-3 mb-1">
+                                    <span id="questBadge" class="bg-cyber-neon/10 text-cyber-neon text-xs font-pixel px-2.5 py-1 rounded border border-cyber-neon/30">LEVEL 1</span>
+                                    <h3 id="questTitle" class="text-xl font-bold text-white">Awakening the Realm</h3>
+                                </div>
+                                <p id="questStory" class="text-gray-300 text-sm mt-2 leading-relaxed max-w-2xl">
+                                    You awaken inside the Cyber Ruins. To pass through the sealed spectral gate, you must summon all records from the ancient heroes table.
+                                </p>
+                            </div>
+
+                            <!-- Reward Display -->
+                            <div class="hidden sm:flex flex-col items-end bg-cyber-dark/80 px-3 py-2 rounded-xl border border-cyber-border">
+                                <span class="text-[10px] uppercase text-gray-400 font-bold">Quest Reward</span>
+                                <div class="flex items-center gap-3 text-xs font-mono font-bold mt-1">
+                                    <span class="text-cyber-purple"><i class="fa-solid fa-star mr-1"></i><span id="questXpReward">+50</span> XP</span>
+                                    <span class="text-cyber-gold"><i class="fa-solid fa-coins mr-1"></i><span id="questGoldReward">+30</span> Gold</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Objective Box -->
+                        <div class="mt-4 bg-cyber-dark/60 rounded-xl p-3 border border-cyber-border flex items-start gap-3">
+                            <div class="text-cyber-neon mt-0.5"><i class="fa-solid fa-bullseye"></i></div>
+                            <div>
+                                <span class="text-xs font-bold text-cyber-neon uppercase tracking-wider">Objective:</span>
+                                <p id="questObjective" class="text-xs text-gray-200 font-mono mt-0.5">Write a SQL query to inspect all columns and rows in the `heroes` table.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SQL Editor & Workbench -->
+                    <div class="bg-cyber-card rounded-2xl border border-cyber-border overflow-hidden flex flex-col shadow-xl">
+                        
+                        <!-- Editor Bar Header -->
+                        <div class="bg-cyber-dark px-4 py-2.5 border-b border-cyber-border flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+                                <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+                                <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+                                <span class="text-xs font-code text-gray-400 ml-2">query.sql</span>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <button onclick="getHint()" class="text-xs bg-cyber-border/60 hover:bg-cyber-border text-gray-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                                    <i class="fa-solid fa-lightbulb text-cyber-gold"></i>
+                                    <span>Hint</span>
+                                </button>
+                                <button onclick="resetQueryEditor()" class="text-xs bg-cyber-border/60 hover:bg-cyber-border text-gray-300 px-3 py-1.5 rounded-lg transition-colors">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Textarea SQL Input -->
+                        <div class="p-4 bg-cyber-dark/90">
+                            <textarea id="questSqlInput" rows="4" spellcheck="false" 
+                                class="w-full bg-transparent font-code text-sm sm:text-base text-cyber-neon focus:outline-none resize-none leading-relaxed"
+                                placeholder="Type your SQL query here..."></textarea>
+                        </div>
+
+                        <!-- Action Controls -->
+                        <div class="p-3 bg-cyber-card border-t border-cyber-border flex items-center justify-between">
+                            <div class="text-xs text-gray-400 font-code hidden sm:block">
+                                Tip: Press <kbd class="px-1.5 py-0.5 bg-cyber-dark border border-cyber-border rounded text-gray-300">Ctrl + Enter</kbd> to execute
+                            </div>
+
+                            <button onclick="executeQuestQuery()" class="pixel-btn bg-gradient-to-r from-cyber-neon to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-cyber-dark font-bold px-6 py-2.5 rounded-xl transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-play"></i>
+                                <span>Cast Query</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hint Drawer (Hidden by default) -->
+                    <div id="hintBox" class="hidden bg-cyber-gold/10 border border-cyber-gold/40 rounded-xl p-4 text-xs text-cyber-gold space-y-1">
+                        <div class="font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-lightbulb"></i>
+                            <span>SQL Guide / Hint:</span>
+                        </div>
+                        <p id="hintText" class="font-mono text-gray-200">Use SELECT * FROM table_name to view all records.</p>
+                    </div>
+
+                    <!-- Execution Output Results Panel -->
+                    <div class="bg-cyber-card rounded-2xl border border-cyber-border p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-bold text-gray-300 flex items-center gap-2">
+                                <i class="fa-solid fa-table text-cyber-neon"></i>
+                                Query Results Output
+                            </h4>
+                            <span id="outputStatus" class="text-xs font-mono text-gray-400">Ready</span>
+                        </div>
+
+                        <!-- Query Output Display (Table or Error) -->
+                        <div id="queryOutputContainer" class="min-h-[140px] max-h-[260px] overflow-auto bg-cyber-dark/80 rounded-xl border border-cyber-border p-3">
+                            <div class="text-gray-500 text-xs font-mono text-center py-8">
+                                Run a SQL query above to view the magic spell results...
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: HABIT TRACKER & CHARACTER SHEET    -->
+        <!-- ========================================== -->
+        <section id="tab-habits" class="hidden space-y-6">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Left Column: Hero Character Sheet & Equipment -->
+                <div class="space-y-6">
+                    
+                    <!-- Hero Avatar Card -->
+                    <div class="bg-cyber-card rounded-2xl border border-cyber-border p-6 flex flex-col items-center relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-cyber-purple via-cyber-neon to-cyber-gold"></div>
+
+                        <!-- Character Avatar Display -->
+                        <div class="relative my-4">
+                            <div id="heroAvatarCircle" class="w-28 h-28 rounded-2xl bg-gradient-to-tr from-cyber-purple/30 to-cyber-neon/30 border-2 border-cyber-neon flex items-center justify-center text-5xl text-cyber-neon shadow-2xl neon-border-cyan">
+                                <i id="heroAvatarIcon" class="fa-solid fa-user-ninja"></i>
+                            </div>
+                            <span class="absolute -bottom-2 -right-2 bg-cyber-gold text-cyber-dark font-pixel text-xs px-2 py-1 rounded-md font-bold shadow">
+                                LVL <span id="charSheetLevel">1</span>
+                            </span>
+                        </div>
+
+                        <h3 id="charSheetName" class="text-xl font-bold text-white tracking-wide mt-1">Cyber Knight</h3>
+                        <p id="charSheetClass" class="text-xs text-cyber-neon font-mono uppercase tracking-widest">Level 1 Database Paladin</p>
+
+                        <!-- HP / MP / XP Bars -->
+                        <div class="w-full space-y-3 mt-6 text-xs">
+                            <!-- HP Bar -->
+                            <div>
+                                <div class="flex justify-between text-gray-300 font-mono mb-1">
+                                    <span><i class="fa-solid fa-heart text-red-500 mr-1"></i> HP</span>
+                                    <span id="hpValue">100 / 100</span>
+                                </div>
+                                <div class="w-full bg-cyber-dark rounded-full h-3 border border-cyber-border overflow-hidden">
+                                    <div id="hpBar" class="bg-gradient-to-r from-red-600 to-pink-500 h-full transition-all duration-300" style="width: 100%"></div>
+                                </div>
+                            </div>
+
+                            <!-- MP Bar -->
+                            <div>
+                                <div class="flex justify-between text-gray-300 font-mono mb-1">
+                                    <span><i class="fa-solid fa-bolt text-cyber-neon mr-1"></i> Mana</span>
+                                    <span id="mpValue">50 / 50</span>
+                                </div>
+                                <div class="w-full bg-cyber-dark rounded-full h-3 border border-cyber-border overflow-hidden">
+                                    <div id="mpBar" class="bg-gradient-to-r from-blue-600 to-cyber-neon h-full transition-all duration-300" style="width: 100%"></div>
+                                </div>
+                            </div>
+
+                            <!-- XP Bar -->
+                            <div>
+                                <div class="flex justify-between text-gray-300 font-mono mb-1">
+                                    <span><i class="fa-solid fa-star text-cyber-purple mr-1"></i> EXP</span>
+                                    <span id="xpValue">25 / 100</span>
+                                </div>
+                                <div class="w-full bg-cyber-dark rounded-full h-3 border border-cyber-border overflow-hidden">
+                                    <div id="xpBar" class="bg-gradient-to-r from-cyber-purple to-purple-400 h-full transition-all duration-300" style="width: 25%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RPG Character Stats Table -->
+                        <div class="w-full border-t border-cyber-border mt-6 pt-4 grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-cyber-dark/80 p-2 rounded-xl border border-cyber-border">
+                                <span class="text-[10px] text-gray-400 font-bold block">INT (SQL)</span>
+                                <span id="statInt" class="text-base font-bold text-cyber-neon">10</span>
+                            </div>
+                            <div class="bg-cyber-dark/80 p-2 rounded-xl border border-cyber-border">
+                                <span class="text-[10px] text-gray-400 font-bold block">STR (Habits)</span>
+                                <span id="statStr" class="text-base font-bold text-cyber-gold">8</span>
+                            </div>
+                            <div class="bg-cyber-dark/80 p-2 rounded-xl border border-cyber-border">
+                                <span class="text-[10px] text-gray-400 font-bold block">AGI (Focus)</span>
+                                <span id="statAgi" class="text-base font-bold text-cyber-purple">7</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- RPG Shop & Gear Inventory -->
+                    <div class="bg-cyber-card rounded-2xl border border-cyber-border p-5 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-store text-cyber-gold"></i>
+                                Hero Armory & Rewards
+                            </h3>
+                            <div class="text-xs font-mono text-cyber-gold bg-cyber-gold/10 px-2 py-1 rounded border border-cyber-gold/30">
+                                <i class="fa-solid fa-coins mr-1"></i><span id="shopGoldDisplay">120</span> Gold
+                            </div>
+                        </div>
+
+                        <div id="shopItemsContainer" class="space-y-2.5">
+                            <!-- Shop items populated via JS -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Right Column: Interactive Daily Habit Tracker Quests -->
+                <div class="lg:col-span-2 space-y-6">
+                    
+                    <!-- Habit Tracker Header & Add Habit Input -->
+                    <div class="bg-cyber-card rounded-2xl border border-cyber-border p-5 space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-list-check text-cyber-neon"></i>
+                                    Daily RPG Quests & Habits
+                                </h2>
+                                <p class="text-xs text-gray-400">Complete real-life habits to gain XP, earn gold, and level up your character!</p>
+                            </div>
+                            <span id="habitStreakBadge" class="text-xs bg-cyber-purple/20 text-cyber-purple px-3 py-1 rounded-full border border-cyber-purple/30 font-bold">
+                                <i class="fa-solid fa-fire mr-1 text-orange-400"></i><span id="completedHabitCount">0</span> Completed Today
+                            </span>
+                        </div>
+
+                        <!-- Add Habit Bar -->
+                        <form id="addHabitForm" onsubmit="addCustomHabit(event)" class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="habitInput" placeholder="New habit (e.g. 'Practice SQL for 15 mins', 'Read 10 pages')..." 
+                                required class="flex-1 bg-cyber-dark border border-cyber-border rounded-xl px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-cyber-neon transition-colors">
+                            
+                            <select id="habitCategory" class="bg-cyber-dark border border-cyber-border rounded-xl px-3 py-2.5 text-xs text-gray-300 focus:outline-none focus:border-cyber-neon">
+                                <option value="INT">INT (Study/SQL)</option>
+                                <option value="STR">STR (Fitness/Health)</option>
+                                <option value="AGI">AGI (Mindfulness/Life)</option>
+                            </select>
+
+                            <button type="submit" class="pixel-btn bg-cyber-purple hover:bg-purple-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Add Quest</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Habits List -->
+                    <div class="bg-cyber-card rounded-2xl border border-cyber-border p-5 space-y-3">
+                        <div class="flex items-center justify-between text-xs font-bold text-gray-400 pb-2 border-b border-cyber-border">
+                            <span>HABIT QUEST</span>
+                            <span>REWARD & ACTION</span>
+                        </div>
+
+                        <div id="habitsList" class="space-y-3">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <!-- SQL Log Sync Notice -->
+                    <div class="bg-cyber-dark/60 rounded-2xl border border-cyber-border p-4 text-xs text-gray-400 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-arrows-rotate text-cyber-neon text-lg"></i>
+                            <div>
+                                <span class="font-bold text-gray-200 block">Database Synchronization Active</span>
+                                <span>All habit completions are automatically logged into the in-memory <code class="text-cyber-neon">habits_log</code> table!</span>
+                            </div>
+                        </div>
+                        <button onclick="switchTab('sandbox'); setSandboxQuery('SELECT * FROM habits_log ORDER BY id DESC');" class="text-cyber-neon hover:underline text-xs font-mono">
+                            View SQL Table &rarr;
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: SQL PLAYGROUND & SANDBOX            -->
+        <!-- ========================================== -->
+        <section id="tab-sandbox" class="hidden space-y-6">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                
+                <!-- Left Column: Database Tables Inspector -->
+                <div class="bg-cyber-card rounded-2xl border border-cyber-border p-4 space-y-4">
+                    <div>
+                        <h2 class="font-bold text-white flex items-center gap-2 text-base">
+                            <i class="fa-solid fa-layer-group text-cyber-neon"></i>
+                            Database Tables
+                        </h2>
+                        <p class="text-xs text-gray-400 mt-1">Click a table to generate a SELECT query automatically.</p>
+                    </div>
+
+                    <!-- Tables Buttons List -->
+                    <div id="sandboxTablesList" class="space-y-2">
+                        <!-- Populated via JS -->
+                    </div>
+
+                    <!-- Quick Query Templates -->
+                    <div class="pt-4 border-t border-cyber-border space-y-2">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block">Query Templates</span>
+                        
+                        <button onclick="setSandboxQuery('SELECT * FROM heroes WHERE hp > 50')" class="w-full text-left text-xs bg-cyber-dark hover:bg-cyber-border/50 text-gray-300 p-2 rounded-lg font-code transition-colors border border-cyber-border/40">
+                            SELECT heroes with HP > 50
+                        </button>
+                        <button onclick="setSandboxQuery('SELECT heroes.name, inventory.item_name, inventory.power FROM heroes JOIN inventory ON heroes.id = inventory.hero_id')" class="w-full text-left text-xs bg-cyber-dark hover:bg-cyber-border/50 text-gray-300 p-2 rounded-lg font-code transition-colors border border-cyber-border/40">
+                            JOIN Heroes & Inventory
+                        </button>
+                        <button onclick="setSandboxQuery('SELECT type, COUNT(*) as count FROM inventory GROUP BY type')" class="w-full text-left text-xs bg-cyber-dark hover:bg-cyber-border/50 text-gray-300 p-2 rounded-lg font-code transition-colors border border-cyber-border/40">
+                            GROUP BY Item Type Count
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Column: Main Sandbox Query Execution Area -->
+                <div class="lg:col-span-3 space-y-4">
+                    
+                    <div class="bg-cyber-card rounded-2xl border border-cyber-border overflow-hidden flex flex-col shadow-2xl">
+                        <!-- Sandbox Editor Bar -->
+                        <div class="bg-cyber-dark px-4 py-3 border-b border-cyber-border flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-terminal text-cyber-neon text-sm"></i>
+                                <span class="text-xs font-code text-gray-200">Custom SQL Playground Sandbox</span>
+                            </div>
+
+                            <button onclick="resetDatabaseTables()" class="text-xs bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/40 px-3 py-1 rounded-lg transition-colors">
+                                <i class="fa-solid fa-database mr-1"></i> Reset DB Mock Data
+                            </button>
+                        </div>
+
+                        <!-- Textarea SQL Input -->
+                        <div class="p-4 bg-cyber-dark/95">
+                            <textarea id="sandboxSqlInput" rows="5" spellcheck="false" 
+                                class="w-full bg-transparent font-code text-sm text-cyber-neon focus:outline-none resize-none leading-relaxed"
+                                placeholder="Write any SQL query here (SELECT, INSERT, UPDATE, DELETE, CREATE TABLE)...">SELECT * FROM heroes;</textarea>
+                        </div>
+
+                        <!-- Action Controls -->
+                        <div class="p-3 bg-cyber-card border-t border-cyber-border flex items-center justify-between">
+                            <span class="text-xs text-gray-400 font-mono">Engine: AlaSQL (In-Memory JS SQL)</span>
+
+                            <div class="flex items-center gap-2">
+                                <button onclick="clearSandboxEditor()" class="text-xs bg-cyber-border/60 hover:bg-cyber-border text-gray-300 px-4 py-2 rounded-xl transition-colors">
+                                    Clear
+                                </button>
+                                <button onclick="executeSandboxQuery()" class="pixel-btn bg-gradient-to-r from-cyber-purple to-cyber-neon hover:opacity-90 text-cyber-dark font-bold px-6 py-2 rounded-xl transition-all flex items-center gap-2">
+                                    <i class="fa-solid fa-bolt"></i>
+                                    <span>Run Custom Query</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Execution Results Output -->
+                    <div class="bg-cyber-card rounded-2xl border border-cyber-border p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-bold text-gray-300 flex items-center gap-2">
+                                <i class="fa-solid fa-table-list text-cyber-purple"></i>
+                                Sandbox Output Table
+                            </h4>
+                            <span id="sandboxStatus" class="text-xs font-mono text-gray-400">0 rows returned</span>
+                        </div>
+
+                        <div id="sandboxOutputContainer" class="min-h-[220px] max-h-[380px] overflow-auto bg-cyber-dark/80 rounded-xl border border-cyber-border p-3">
+                            <!-- Output rendered via JS -->
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-cyber-border bg-cyber-card/50 py-4 px-6 text-center text-xs text-gray-500">
+        <p>SQL Quest Gamified Learning Web App &bull; Powered by AlaSQL In-Memory Database</p>
+    </footer>
+
+    <!-- LEVEL UP / QUEST COMPLETE MODAL -->
+    <div id="rewardModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-cyber-card border-2 border-cyber-neon rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-5 shadow-2xl relative overflow-hidden neon-border-cyan">
+            
+            <div class="w-20 h-20 bg-cyber-neon/20 rounded-full border-2 border-cyber-neon flex items-center justify-center text-4xl text-cyber-neon mx-auto pulse-glow">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+
+            <div>
+                <span id="modalHeaderSubtitle" class="text-xs font-pixel text-cyber-neon uppercase tracking-widest block mb-1">VICTORY UNLOCKED</span>
+                <h3 id="modalTitle" class="text-2xl font-bold text-white">Quest Completed!</h3>
+                <p id="modalDescription" class="text-sm text-gray-300 mt-2">You mastered the SELECT query spell and unsealed the ancient doors!</p>
+            </div>
+
+            <!-- Reward Badges -->
+            <div class="flex justify-center items-center gap-4 py-2">
+                <div class="bg-cyber-dark/80 px-4 py-2 rounded-xl border border-cyber-purple text-cyber-purple font-mono font-bold text-sm">
+                    <i class="fa-solid fa-star mr-1.5"></i>+<span id="modalXp">50</span> XP
+                </div>
+                <div class="bg-cyber-dark/80 px-4 py-2 rounded-xl border border-cyber-gold text-cyber-gold font-mono font-bold text-sm">
+                    <i class="fa-solid fa-coins mr-1.5"></i>+<span id="modalGold">30</span> Gold
+                </div>
+            </div>
+
+            <button onclick="closeModal()" class="pixel-btn w-full bg-gradient-to-r from-cyber-neon to-cyber-purple text-cyber-dark font-bold py-3 rounded-xl hover:opacity-90 transition-all">
+                Continue Adventure &rarr;
+            </button>
+        </div>
+    </div>
+
+
+    <!-- APP LOGIC & ENGINE SCRIPT -->
+    <script>
+        /* ==========================================================================
+           1. GAME STATE & IN-MEMORY DATABASE INITIALIZATION
+           ========================================================================== */
+        
+        // RPG Hero Character State
+        let hero = {
+            name: "Cyber Knight",
+            class: "Database Paladin",
+            level: 1,
+            xp: 25,
+            maxXp: 100,
+            gold: 120,
+            hp: 100,
+            maxHp: 100,
+            mp: 50,
+            maxMp: 50,
+            stats: {
+                int: 10,
+                str: 8,
+                agi: 7
+            },
+            inventory: ['Starter Cyber Blade']
+        };
+
+        // SQL Campaign Quests Levels Data
+        const questLevels = [
+            {
+                id: 1,
+                title: "Awakening the Realm",
+                badge: "LEVEL 1",
+                story: "You awaken inside the Cyber Ruins. To pass through the spectral gate, you must inspect all hero records stored in the database.",
+                objective: "Write a query to retrieve ALL columns and rows from the `heroes` table.",
+                expectedSql: "SELECT * FROM heroes",
+                initialQuery: "SELECT * FROM ",
+                hint: "Use `SELECT * FROM heroes;` to view all records in the heroes table.",
+                xpReward: 50,
+                goldReward: 30,
+                validate: (res) => Array.isArray(res) && res.length >= 3 && res[0].hasOwnProperty('hp')
+            },
+            {
+                id: 2,
+                title: "Filtering Veteran Champions",
+                badge: "LEVEL 2",
+                story: "The ancient gate demands veterans to lead the vanguard. Filter the hero registry for high-level champions.",
+                objective: "Select `name` and `class` from `heroes` where `level` is greater than 5.",
+                expectedSql: "SELECT name, class FROM heroes WHERE level > 5",
+                initialQuery: "SELECT name, class FROM heroes WHERE ",
+                hint: "Add `WHERE level > 5` to filter rows matching the condition.",
+                xpReward: 75,
+                goldReward: 40,
+                validate: (res) => Array.isArray(res) && res.length > 0 && res.every(r => r.level === undefined && r.name && r.class)
+            },
+            {
+                id: 3,
+                title: "Inspecting the Armory",
+                badge: "LEVEL 3",
+                story: "Before confronting dark forces, inspect your armory for powerful weapons sorted by attack power.",
+                objective: "Select all columns from `inventory` where `type = 'weapon'`, ordered by `attack` in descending order (`DESC`).",
+                expectedSql: "SELECT * FROM inventory WHERE type = 'weapon' ORDER BY attack DESC",
+                initialQuery: "SELECT * FROM inventory WHERE type = 'weapon' ",
+                hint: "Append `ORDER BY attack DESC` to rank weapons from strongest to weakest.",
+                xpReward: 90,
+                goldReward: 50,
+                validate: (res) => Array.isArray(res) && res.length > 0 && res[0].type === 'weapon' && (res.length < 2 || res[0].attack >= res[1].attack)
+            },
+            {
+                id: 4,
+                title: "Forging the Flame Sword",
+                badge: "LEVEL 4",
+                story: "The blacksmith needs to add a newly forged legendary blade directly into the inventory table.",
+                objective: "INSERT a new record into `inventory`: item_name='Flame Sword', type='weapon', attack=85, hero_id=1.",
+                expectedSql: "INSERT INTO inventory (item_name, type, attack, hero_id) VALUES ('Flame Sword', 'weapon', 85, 1)",
+                initialQuery: "INSERT INTO inventory (item_name, type, attack, hero_id) VALUES ('Flame Sword', ",
+                hint: "Use syntax: `INSERT INTO inventory (item_name, type, attack, hero_id) VALUES ('Flame Sword', 'weapon', 85, 1)`.",
+                xpReward: 120,
+                goldReward: 60,
+                validate: (res, rawQuery) => rawQuery.toLowerCase().includes('insert into inventory')
+            },
+            {
+                id: 5,
+                title: "Restoring Hero Health",
+                badge: "LEVEL 5",
+                story: "Your paladin was struck by a dark curse! Cast a healing potion query to restore HP to 100.",
+                objective: "UPDATE the `heroes` table setting `hp = 100` WHERE `name = 'Cyber Knight'`.",
+                expectedSql: "UPDATE heroes SET hp = 100 WHERE name = 'Cyber Knight'",
+                initialQuery: "UPDATE heroes SET hp = 100 WHERE ",
+                hint: "Use `UPDATE heroes SET hp = 100 WHERE name = 'Cyber Knight'`.",
+                xpReward: 140,
+                goldReward: 70,
+                validate: (res, rawQuery) => rawQuery.toLowerCase().includes('update heroes set hp = 100')
+            },
+            {
+                id: 6,
+                title: "Joining Hero & Gear Logs",
+                badge: "LEVEL 6",
+                story: "The High Council needs a comprehensive report joining hero champions with their assigned weapons.",
+                objective: "Write a JOIN query connecting `heroes` and `inventory` using `heroes.id = inventory.hero_id`.",
+                expectedSql: "SELECT heroes.name, inventory.item_name FROM heroes JOIN inventory ON heroes.id = inventory.hero_id",
+                initialQuery: "SELECT heroes.name, inventory.item_name FROM heroes JOIN inventory ON ",
+                hint: "Use `JOIN inventory ON heroes.id = inventory.hero_id` to link the tables.",
+                xpReward: 200,
+                goldReward: 100,
+                validate: (res) => Array.isArray(res) && res.length > 0 && res[0].hasOwnProperty('name') && res[0].hasOwnProperty('item_name')
+            }
+        ];
+
+        let currentQuestIndex = 0;
+        let completedQuests = new Set();
+
+        // Habit Tracking Quests Data
+        let habits = [
+            { id: 1, title: "Practice SQL Queries for 15 mins", category: "INT", xp: 30, gold: 20, completed: false },
+            { id: 2, title: "Physical Workout / 20 Pushups", category: "STR", xp: 30, gold: 20, completed: false },
+            { id: 3, title: "Mindful Meditation & Focus", category: "AGI", xp: 25, gold: 15, completed: false }
+        ];
+
+        // RPG Shop Gear
+        const shopItems = [
+            { id: 1, name: "Aegis Cyber Shield", stat: "+5 STR / +20 HP", price: 60, icon: "fa-shield-halved", bought: false },
+            { id: 2, name: "Tome of Query Sorcery", stat: "+8 INT (SQL)", price: 100, icon: "fa-book-skull", bought: false },
+            { id: 3, name: "Boots of Rapid Focus", stat: "+6 AGI", price: 80, icon: "fa-socks", bought: false }
+        ];
+
+        /* ==========================================================================
+           2. DATABASE INITIALIZATION VIA ALASQL
+           ========================================================================== */
+        
+        function initDatabase() {
+            try {
+                // Drop tables if re-initializing
+                alasql('DROP TABLE IF EXISTS heroes');
+                alasql('DROP TABLE IF EXISTS inventory');
+                alasql('DROP TABLE IF EXISTS monsters');
+                alasql('DROP TABLE IF EXISTS spells');
+                alasql('DROP TABLE IF EXISTS habits_log');
+
+                // Create heroes table
+                alasql('CREATE TABLE heroes (id INT, name STRING, class STRING, level INT, hp INT, mp INT)');
+                alasql('INSERT INTO heroes VALUES (1, "Cyber Knight", "Paladin", 1, 80, 50)');
+                alasql('INSERT INTO heroes VALUES (2, "Aria Sunblade", "Mage", 7, 65, 120)');
+                alasql('INSERT INTO heroes VALUES (3, "Thorin Ironhand", "Warrior", 12, 150, 20)');
+
+                // Create inventory table
+                alasql('CREATE TABLE inventory (id INT, item_name STRING, type STRING, attack INT, hero_id INT)');
+                alasql('INSERT INTO inventory VALUES (101, "Cyber Blade", "weapon", 45, 1)');
+                alasql('INSERT INTO inventory VALUES (102, "Arcane Staff", "weapon", 70, 2)');
+                alasql('INSERT INTO inventory VALUES (103, "Obsidian Shield", "armor", 15, 3)');
+                alasql('INSERT INTO inventory VALUES (104, "Dragon Axe", "weapon", 95, 3)');
+
+                // Create monsters table
+                alasql('CREATE TABLE monsters (id INT, name STRING, danger_level INT, exp_drop INT)');
+                alasql('INSERT INTO monsters VALUES (1, "Shadow Goblin", 2, 25)');
+                alasql('INSERT INTO monsters VALUES (2, "NullPointer Dragon", 10, 300)');
+
+                // Create spells table
+                alasql('CREATE TABLE spells (id INT, name STRING, mana_cost INT, power INT)');
+                alasql('INSERT INTO spells VALUES (1, "SELECT Fireball", 15, 60)');
+                alasql('INSERT INTO spells VALUES (2, "JOIN Thunderbolt", 30, 110)');
+
+                // Create habits_log table
+                alasql('CREATE TABLE habits_log (id INT, habit_title STRING, category STRING, timestamp STRING)');
+                
+                console.log("In-Memory AlaSQL Database Initialized Successfully!");
+            } catch (err) {
+                console.error("Database Init Error:", err);
+            }
+        }
+
+        /* ==========================================================================
+           3. SOUND EFFECTS SYNTHESIS (WEB AUDIO API - NO EXTERNAL FILES)
+           ========================================================================== */
+        
+        function playSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'success') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'levelup') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(260, ctx.currentTime);
+                    osc.frequency.setValueAtTime(330, ctx.currentTime + 0.1);
+                    osc.frequency.setValueAtTime(392, ctx.currentTime + 0.2);
+                    osc.frequency.setValueAtTime(523, ctx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.5);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.25);
+                }
+            } catch (e) {
+                // AudioContext not supported or blocked
+            }
+        }
+
+        /* ==========================================================================
+           4. UI RENDERING & TAB NAVIGATION
+           ========================================================================== */
+
+        function switchTab(tabId) {
+            document.getElementById('tab-quests').classList.add('hidden');
+            document.getElementById('tab-habits').classList.add('hidden');
+            document.getElementById('tab-sandbox').classList.add('hidden');
+
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.classList.remove('text-cyber-neon', 'bg-cyber-card', 'border', 'border-cyber-neon/40');
+                btn.classList.add('text-gray-400');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tabBtn-${tabId}`);
+            activeBtn.classList.remove('text-gray-400');
+            activeBtn.classList.add('text-cyber-neon', 'bg-cyber-card', 'border', 'border-cyber-neon/40');
+
+            if (tabId === 'sandbox') {
+                renderSandboxTablesList();
+            }
+        }
+
+        function updateHeroStatsUI() {
+            // Header stats
+            document.getElementById('headerHeroName').innerText = hero.name;
+            document.getElementById('headerLevel').innerText = hero.level;
+            document.getElementById('headerGold').innerText = hero.gold;
+            const xpPct = Math.min(100, Math.round((hero.xp / hero.maxXp) * 100));
+            document.getElementById('headerXpBar').style.width = `${xpPct}%`;
+
+            // Character Sheet
+            document.getElementById('charSheetLevel').innerText = hero.level;
+            document.getElementById('charSheetName').innerText = hero.name;
+            document.getElementById('charSheetClass').innerText = `Level ${hero.level} ${hero.class}`;
+            
+            document.getElementById('hpValue').innerText = `${hero.hp} / ${hero.maxHp}`;
+            document.getElementById('hpBar').style.width = `${(hero.hp / hero.maxHp) * 100}%`;
+
+            document.getElementById('mpValue').innerText = `${hero.mp} / ${hero.maxMp}`;
+            document.getElementById('mpBar').style.width = `${(hero.mp / hero.maxMp) * 100}%`;
+
+            document.getElementById('xpValue').innerText = `${hero.xp} / ${hero.maxXp}`;
+            document.getElementById('xpBar').style.width = `${xpPct}%`;
+
+            document.getElementById('statInt').innerText = hero.stats.int;
+            document.getElementById('statStr').innerText = hero.stats.str;
+            document.getElementById('statAgi').innerText = hero.stats.agi;
+
+            document.getElementById('shopGoldDisplay').innerText = hero.gold;
+        }
+
+        function renderCampaignLevels() {
+            const container = document.getElementById('questLevelsList');
+            container.innerHTML = '';
+
+            questLevels.forEach((quest, index) => {
+                const isCurrent = index === currentQuestIndex;
+                const isCleared = completedQuests.has(quest.id);
+
+                const item = document.createElement('div');
+                item.onclick = () => loadQuestLevel(index);
+                item.className = `p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                    isCurrent 
+                        ? 'bg-cyber-neon/10 border-cyber-neon text-white font-bold' 
+                        : isCleared 
+                        ? 'bg-cyber-dark/80 border-cyber-success/50 text-gray-300' 
+                        : 'bg-cyber-dark/40 border-cyber-border text-gray-500 hover:border-gray-500'
+                }`;
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs ${
+                            isCleared 
+                                ? 'bg-cyber-success/20 text-cyber-success' 
+                                : isCurrent 
+                                ? 'bg-cyber-neon text-cyber-dark font-bold' 
+                                : 'bg-cyber-border text-gray-400'
+                        }">
+                            ${isCleared ? '<i class="fa-solid fa-check"></i>' : index + 1}
+                        </div>
+                        <div>
+                            <span class="text-xs font-pixel block ${isCurrent ? 'text-cyber-neon' : ''}">${quest.badge}</span>
+                            <span class="text-sm font-semibold">${quest.title}</span>
+                        </div>
+                    </div>
+                    ${isCleared ? '<i class="fa-solid fa-award text-cyber-gold text-sm"></i>' : '<i class="fa-solid fa-chevron-right text-xs opacity-50"></i>'}
+                `;
+                container.appendChild(item);
+            });
+
+            document.getElementById('campaignProgressText').innerText = `${completedQuests.size} / ${questLevels.length} Clear`;
+        }
+
+        function loadQuestLevel(index) {
+            currentQuestIndex = index;
+            const q = questLevels[index];
+
+            document.getElementById('questBadge').innerText = q.badge;
+            document.getElementById('questTitle').innerText = q.title;
+            document.getElementById('questStory').innerText = q.story;
+            document.getElementById('questObjective').innerText = q.objective;
+            document.getElementById('questXpReward').innerText = `+${q.xpReward}`;
+            document.getElementById('questGoldReward').innerText = `+${q.goldReward}`;
+
+            document.getElementById('questSqlInput').value = q.initialQuery;
+            document.getElementById('hintText').innerText = q.hint;
+            document.getElementById('hintBox').classList.add('hidden');
+
+            renderCampaignLevels();
+            document.getElementById('queryOutputContainer').innerHTML = `
+                <div class="text-gray-500 text-xs font-mono text-center py-8">
+                    Cast your SQL spell to execute quest level ${q.id}...
+                </div>
+            `;
+            document.getElementById('outputStatus').innerText = "Ready";
+            document.getElementById('outputStatus').className = "text-xs font-mono text-gray-400";
+        }
+
+        function getHint() {
+            document.getElementById('hintBox').classList.toggle('hidden');
+        }
+
+        function resetQueryEditor() {
+            document.getElementById('questSqlInput').value = questLevels[currentQuestIndex].initialQuery;
+        }
+
+        /* ==========================================================================
+           5. SQL EXECUTION ENGINE & TABLE RENDERER
+           ========================================================================== */
+
+        function executeQuestQuery() {
+            const query = document.getElementById('questSqlInput').value.trim();
+            const currentQuest = questLevels[currentQuestIndex];
+            const outputContainer = document.getElementById('queryOutputContainer');
+            const statusLabel = document.getElementById('outputStatus');
+
+            if (!query) return;
+
+            try {
+                // Execute SQL using AlaSQL
+                const result = alasql(query);
+                
+                // Render Table Result
+                renderSqlResultTable(result, outputContainer);
+
+                // Validate Quest Victory
+                if (currentQuest.validate(result, query)) {
+                    statusLabel.innerText = "QUERY SUCCESSFUL";
+                    statusLabel.className = "text-xs font-mono text-cyber-success font-bold";
+                    
+                    playSound('success');
+
+                    // Check if first time clearing quest
+                    if (!completedQuests.has(currentQuest.id)) {
+                        completedQuests.add(currentQuest.id);
+                        addHeroRewards(currentQuest.xpReward, currentQuest.goldReward);
+                        showRewardModal(currentQuest.title, `You mastered Level ${currentQuest.id}!`, currentQuest.xpReward, currentQuest.goldReward);
+                    }
+
+                    renderCampaignLevels();
+                } else {
+                    statusLabel.innerText = "Query Executed (Goal Not Met)";
+                    statusLabel.className = "text-xs font-mono text-cyber-gold font-bold";
+                }
+
+            } catch (err) {
+                playSound('error');
+                statusLabel.innerText = "SQL ERROR";
+                statusLabel.className = "text-xs font-mono text-red-400 font-bold";
+                
+                outputContainer.innerHTML = `
+                    <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 font-code text-xs">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Syntax/Execution Error: ${err.message}
+                    </div>
+                `;
+            }
+        }
+
+        function renderSqlResultTable(res, container) {
+            container.innerHTML = '';
+
+            if (typeof res === 'number') {
+                container.innerHTML = `
+                    <div class="text-cyber-neon font-code text-xs p-3">
+                        <i class="fa-solid fa-circle-check mr-2"></i> Command executed successfully. Rows affected: ${res}
+                    </div>
+                `;
+                return;
+            }
+
+            if (!Array.isArray(res) || res.length === 0) {
+                container.innerHTML = `
+                    <div class="text-gray-400 font-mono text-xs p-4 text-center">
+                        Query executed successfully. 0 rows returned.
+                    </div>
+                `;
+                return;
+            }
+
+            // Extract Headers
+            const headers = Object.keys(res[0]);
+
+            let tableHtml = `
+                <table class="w-full text-left font-code text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-cyber-border text-cyber-neon bg-cyber-dark">
+                            ${headers.map(h => `<th class="p-2 font-bold uppercase tracking-wider">${h}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-cyber-border/40 text-gray-300">
+            `;
+
+            res.forEach(row => {
+                tableHtml += `<tr class="hover:bg-cyber-card/60 transition-colors">`;
+                headers.forEach(h => {
+                    tableHtml += `<td class="p-2">${row[h] !== undefined ? row[h] : 'NULL'}</td>`;
+                });
+                tableHtml += `</tr>`;
+            });
+
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
+        }
+
+        /* ==========================================================================
+           6. HABIT TRACKER LOGIC & REWARDS
+           ========================================================================== */
+
+        function renderHabits() {
+            const container = document.getElementById('habitsList');
+            container.innerHTML = '';
+
+            let completedCount = 0;
+
+            habits.forEach(habit => {
+                if (habit.completed) completedCount++;
+
+                const card = document.createElement('div');
+                card.className = `p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
+                    habit.completed 
+                        ? 'bg-cyber-dark/40 border-cyber-success/30 opacity-75' 
+                        : 'bg-cyber-dark/80 border-cyber-border hover:border-cyber-purple/50'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <button onclick="toggleHabit(${habit.id})" class="w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${
+                            habit.completed 
+                                ? 'bg-cyber-success border-cyber-success text-cyber-dark font-bold' 
+                                : 'border-cyber-border hover:border-cyber-neon text-transparent'
+                        }">
+                            <i class="fa-solid fa-check text-xs"></i>
+                        </button>
+                        <div>
+                            <span class="text-sm font-semibold text-gray-200 ${habit.completed ? 'line-through text-gray-500' : ''}">${habit.title}</span>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyber-card border border-cyber-border text-cyber-neon">${habit.category}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between sm:justify-end gap-3">
+                        <div class="flex items-center gap-2 font-mono text-xs font-bold">
+                            <span class="text-cyber-purple">+${habit.xp} XP</span>
+                            <span class="text-cyber-gold">+${habit.gold} Gold</span>
+                        </div>
+                        <button onclick="deleteHabit(${habit.id})" class="text-gray-500 hover:text-red-400 text-xs px-2 py-1">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            document.getElementById('completedHabitCount').innerText = completedCount;
+        }
+
+        function addCustomHabit(e) {
+            e.preventDefault();
+            const input = document.getElementById('habitInput');
+            const cat = document.getElementById('habitCategory').value;
+            const title = input.value.trim();
+
+            if (!title) return;
+
+            const newHabit = {
+                id: Date.now(),
+                title: title,
+                category: cat,
+                xp: 35,
+                gold: 25,
+                completed: false
+            };
+
+            habits.unshift(newHabit);
+            input.value = '';
+            renderHabits();
+        }
+
+        function toggleHabit(id) {
+            const habit = habits.find(h => h.id === id);
+            if (!habit) return;
+
+            habit.completed = !habit.completed;
+
+            if (habit.completed) {
+                playSound('success');
+                addHeroRewards(habit.xp, habit.gold);
+                
+                // Stat boost based on habit category
+                if (habit.category === 'INT') hero.stats.int += 1;
+                if (habit.category === 'STR') hero.stats.str += 1;
+                if (habit.category === 'AGI') hero.stats.agi += 1;
+
+                // Log into AlaSQL habits_log table
+                try {
+                    alasql('INSERT INTO habits_log VALUES (?, ?, ?, ?)', [
+                        habit.id, habit.title, habit.category, new Date().toLocaleTimeString()
+                    ]);
+                } catch(e) {}
+
+                confetti({
+                    particleCount: 40,
+                    spread: 60,
+                    origin: { y: 0.8 }
+                });
+            }
+
+            renderHabits();
+            updateHeroStatsUI();
+        }
+
+        function deleteHabit(id) {
+            habits = habits.filter(h => h.id !== id);
+            renderHabits();
+        }
+
+        /* ==========================================================================
+           7. HERO LEVELING, SHOP & REWARDS
+           ========================================================================== */
+
+        function addHeroRewards(xpGain, goldGain) {
+            hero.xp += xpGain;
+            hero.gold += goldGain;
+
+            // Level Up Check
+            if (hero.xp >= hero.maxXp) {
+                hero.level += 1;
+                hero.xp = hero.xp - hero.maxXp;
+                hero.maxXp = Math.round(hero.maxXp * 1.3);
+                hero.maxHp += 20;
+                hero.hp = hero.maxHp;
+                hero.maxMp += 10;
+                hero.mp = hero.maxMp;
+                hero.stats.int += 2;
+                hero.stats.str += 2;
+                hero.stats.agi += 2;
+
+                playSound('levelup');
+                confetti({
+                    particleCount: 100,
+                    spread: 90,
+                    origin: { y: 0.5 }
+                });
+            }
+
+            updateHeroStatsUI();
+        }
+
+        function renderShopItems() {
+            const container = document.getElementById('shopItemsContainer');
+            container.innerHTML = '';
+
+            shopItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-cyber-dark/80 p-3 rounded-xl border border-cyber-border flex items-center justify-between";
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-cyber-purple/20 border border-cyber-purple/40 flex items-center justify-center text-cyber-purple text-base">
+                            <i class="fa-solid ${item.icon}"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-gray-200 block">${item.name}</span>
+                            <span class="text-[10px] text-cyber-neon font-mono">${item.stat}</span>
+                        </div>
+                    </div>
+
+                    <button onclick="buyShopItem(${item.id})" ${item.bought ? 'disabled' : ''} class="pixel-btn text-xs font-mono font-bold px-3 py-1.5 rounded-lg transition-all ${
+                        item.bought 
+                            ? 'bg-cyber-border text-gray-500 cursor-not-allowed' 
+                            : 'bg-cyber-gold/20 hover:bg-cyber-gold text-cyber-gold border border-cyber-gold/40 hover:text-cyber-dark'
+                    }">
+                        ${item.bought ? 'Owned' : `<i class="fa-solid fa-coins mr-1"></i>${item.price}`}
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function buyShopItem(id) {
+            const item = shopItems.find(i => i.id === id);
+            if (!item || item.bought) return;
+
+            if (hero.gold >= item.price) {
+                hero.gold -= item.price;
+                item.bought = true;
+                hero.inventory.push(item.name);
+
+                // Apply Stat Bonuses
+                if (id === 1) { hero.stats.str += 5; hero.maxHp += 20; hero.hp += 20; }
+                if (id === 2) { hero.stats.int += 8; }
+                if (id === 3) { hero.stats.agi += 6; }
+
+                playSound('success');
+                updateHeroStatsUI();
+                renderShopItems();
+            } else {
+                playSound('error');
+            }
+        }
+
+        /* ==========================================================================
+           8. SANDBOX / CUSTOM PLAYGROUND ENGINE
+           ========================================================================== */
+
+        function renderSandboxTablesList() {
+            const container = document.getElementById('sandboxTablesList');
+            const tables = ['heroes', 'inventory', 'monsters', 'spells', 'habits_log'];
+            container.innerHTML = '';
+
+            tables.forEach(table => {
+                const btn = document.createElement('button');
+                btn.onclick = () => setSandboxQuery(`SELECT * FROM ${table}`);
+                btn.className = "w-full text-left text-xs bg-cyber-dark hover:bg-cyber-neon/10 hover:border-cyber-neon text-gray-200 p-2.5 rounded-xl border border-cyber-border font-mono transition-all flex items-center justify-between";
+                btn.innerHTML = `
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-table text-cyber-purple"></i> ${table}</span>
+                    <i class="fa-solid fa-arrow-right text-[10px] opacity-40"></i>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function setSandboxQuery(sql) {
+            document.getElementById('sandboxSqlInput').value = sql;
+            executeSandboxQuery();
+        }
+
+        function clearSandboxEditor() {
+            document.getElementById('sandboxSqlInput').value = '';
+        }
+
+        function executeSandboxQuery() {
+            const query = document.getElementById('sandboxSqlInput').value.trim();
+            const container = document.getElementById('sandboxOutputContainer');
+            const status = document.getElementById('sandboxStatus');
+
+            if (!query) return;
+
+            try {
+                const res = alasql(query);
+                renderSqlResultTable(res, container);
+                
+                const count = Array.isArray(res) ? res.length : 1;
+                status.innerText = `${count} rows returned`;
+                status.className = "text-xs font-mono text-cyber-neon";
+            } catch (err) {
+                playSound('error');
+                status.innerText = "Error";
+                status.className = "text-xs font-mono text-red-400";
+                
+                container.innerHTML = `
+                    <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 font-code text-xs">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Sandbox Error: ${err.message}
+                    </div>
+                `;
+            }
+        }
+
+        function resetDatabaseTables() {
+            initDatabase();
+            executeSandboxQuery();
+        }
+
+        function resetCampaignProgress() {
+            completedQuests.clear();
+            currentQuestIndex = 0;
+            loadQuestLevel(0);
+        }
+
+        /* ==========================================================================
+           9. MODAL HELPERS & KEYBOARD SHORTCUTS
+           ========================================================================== */
+
+        function showRewardModal(title, desc, xp, gold) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalDescription').innerText = desc;
+            document.getElementById('modalXp').innerText = xp;
+            document.getElementById('modalGold').innerText = gold;
+            document.getElementById('rewardModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('rewardModal').classList.add('hidden');
+            if (currentQuestIndex < questLevels.length - 1) {
+                loadQuestLevel(currentQuestIndex + 1);
+            }
+        }
+
+        // Global Key Listener for Ctrl+Enter Query Execution
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                const questTabVisible = !document.getElementById('tab-quests').classList.contains('hidden');
+                if (questTabVisible) {
+                    executeQuestQuery();
+                } else {
+                    executeSandboxQuery();
+                }
+            }
+        });
+
+        /* ==========================================================================
+           10. ON LOAD INITIALIZATION
+           ========================================================================== */
+        window.onload = function() {
+            initDatabase();
+            updateHeroStatsUI();
+            renderCampaignLevels();
+            loadQuestLevel(0);
+            renderHabits();
+            renderShopItems();
+        };
+    </script>
+</body>
+</html>
