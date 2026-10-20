@@ -756,9 +756,13 @@
            2. DATABASE INITIALIZATION VIA ALASQL
            ========================================================================== */
         
+        // Ensure AlaSQL instance is bound globally and tables are initialized
         function initDatabase() {
             try {
-                // Drop tables if re-initializing
+                // Ensure AlaSQL uses persistent case-insensitive options if available
+                alasql.options.casesensitive = false;
+
+                // Drop and recreate mock tables in lower case and exact schema
                 alasql('DROP TABLE IF EXISTS heroes');
                 alasql('DROP TABLE IF EXISTS inventory');
                 alasql('DROP TABLE IF EXISTS monsters');
@@ -794,6 +798,13 @@
                 console.log("In-Memory AlaSQL Database Initialized Successfully!");
             } catch (err) {
                 console.error("Database Init Error:", err);
+            }
+        }
+
+        // Helper to check if tables exist before running queries
+        function ensureTablesExist() {
+            if (!alasql.tables || !alasql.tables.heroes) {
+                initDatabase();
             }
         }
 
@@ -974,6 +985,7 @@
            ========================================================================== */
 
         function executeQuestQuery() {
+            ensureTablesExist();
             const query = document.getElementById('questSqlInput').value.trim();
             const currentQuest = questLevels[currentQuestIndex];
             const outputContainer = document.getElementById('queryOutputContainer');
@@ -1013,9 +1025,14 @@
                 statusLabel.innerText = "SQL ERROR";
                 statusLabel.className = "text-xs font-mono text-red-400 font-bold";
                 
+                let errorMsg = err.message || "Execution error";
+                if (errorMsg.toLowerCase().includes("table does not exist")) {
+                    errorMsg += ". Available mock tables: `heroes`, `inventory`, `monsters`, `spells`, `habits_log`.";
+                }
+
                 outputContainer.innerHTML = `
                     <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 font-code text-xs">
-                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Syntax/Execution Error: ${err.message}
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Syntax/Execution Error: ${errorMsg}
                     </div>
                 `;
             }
@@ -1297,6 +1314,7 @@
         }
 
         function executeSandboxQuery() {
+            ensureTablesExist();
             const query = document.getElementById('sandboxSqlInput').value.trim();
             const container = document.getElementById('sandboxOutputContainer');
             const status = document.getElementById('sandboxStatus');
@@ -1315,9 +1333,14 @@
                 status.innerText = "Error";
                 status.className = "text-xs font-mono text-red-400";
                 
+                let errorMsg = err.message || "Execution error";
+                if (errorMsg.toLowerCase().includes("table does not exist")) {
+                    errorMsg += ". Available mock tables: `heroes`, `inventory`, `monsters`, `spells`, `habits_log`.";
+                }
+
                 container.innerHTML = `
                     <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 font-code text-xs">
-                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Sandbox Error: ${err.message}
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Sandbox Error: ${errorMsg}
                     </div>
                 `;
             }
